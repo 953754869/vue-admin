@@ -1,0 +1,100 @@
+import permission from './permission'
+
+const install = function(Vue) {
+  Vue.directive('permission', permission)
+}
+
+if (window.Vue) {
+  window['permission'] = permission
+  Vue.use(install); // eslint-disable-line
+}
+
+permission.install = install
+export default permission
+
+////////////////////////////////////////////////////
+
+import store from '@/store'
+
+function checkPermission(el, binding) {
+    const { value } = binding
+    const roles = store.getters && store.getters.roles
+
+    if (value && value instanceof Array) {
+      if (value.length > 0) {
+        const permissionRoles = value
+
+        const hasPermission = roles.some(role => {
+          return permissionRoles.includes(role)
+        })
+
+        if (!hasPermission) {
+          el.parentNode && el.parentNode.removeChild(el)
+        }
+      }
+    } else {
+      throw new Error(`need roles! Like v-permission="['权限不足','权限不足']"`)
+    }
+  }
+
+  export default {
+    inserted(el, binding) {
+      checkPermission(el, binding)
+    },
+    update(el, binding) {
+      checkPermission(el, binding)
+    }
+  }
+  ////////////////////////////////////////////////////
+<template>
+  <div class="dashboard-container">
+    <div class="dashboard-text">name: {{ name }}</div>
+    <el-tooltip class="item" effect="dark" content="普通用户只拥有普通权限" placement="top-start">
+  <el-button v-permission="['主管','普通用户']">admin</el-button>
+</el-tooltip>
+<el-tooltip class="item" effect="dark" content="主管所有权限都可查看" placement="top-start">
+  <el-button v-permission="['主管']">editor</el-button>
+</el-tooltip>
+  </div>
+</template>
+
+<script>
+import permission from '@/directive/permission/index.js' // 权限判断指令
+import { mapGetters } from 'vuex'
+
+export default {
+  name: 'Dashboard',
+  computed: {
+    ...mapGetters([
+      'name'
+    ])
+  },
+  directives: { permission } // 自定义指令
+}
+</script>
+
+
+<style lang="scss" scoped>
+.dashboard {
+  &-container {
+    margin: 30px;
+  }
+  &-text {
+    font-size: 30px;
+    line-height: 46px;
+  }
+}
+</style>
+  ////////////////////////////////////////////////////
+
+  ////////////////////////////////////////////////////
+
+  ////////////////////////////////////////////////////
+
+  ////////////////////////////////////////////////////
+
+  ////////////////////////////////////////////////////
+
+
+
+
