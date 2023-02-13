@@ -1,149 +1,18 @@
-<template>
-  <el-row v-bind="rowProps">
-    <slot> </slot>
-    <template v-if="advanced">
-      <slot name="advanced"> </slot>
-    </template>
-    <el-col v-bind="actionColOpt">
-      <el-form-item class="search-action" label-width="0">
-        <el-button v-if="hasAdvanced" type="text" @click="handleAdvanced">
-          {{ advanced ? '收起' : '展开' }}
-          <i :class="advanced ? 'el-icon-arrow-up' : 'el-icon-arrow-down'"></i>
-        </el-button>
-        <slot name="advanceBefore"></slot>
-        <el-button size="small" @click="handleReset">重置</el-button>
-        <el-button size="small" type="primary" :loading="searchLoading" @click="handleSearch">查询</el-button>
-        <slot name="advanceAfter"></slot>
-      </el-form-item>
-    </el-col>
-  </el-row>
-</template>
-<script setup>
-import { ref, computed, useSlots } from 'vue';
-
-defineProps({
-  rowProps: {
-    type: Object,
-    default: () => {
-      return {
-        gutter: 20
-      };
-    }
-  },
-  searchLoading: {
-    type: Number,
-    required: true
-  }
-});
-
-const emit = defineEmits(['reset', 'search']);
-
-const advanced = ref(false);
-
-const actionColOpt = computed(() => {
-  const { default: defalutSlot, advanced: advancedSlot } = useSlots();
-  const defaultCol = defalutSlot().reduce((acc, cur) => (acc += cur.componentOptions.propsData.span), 0);
-  const advancedCol =
-    advanced.value && advancedSlot().reduce((acc, cur) => (acc += cur.componentOptions.propsData.span), 0);
-  /** 满行后余多少份 */
-  const redunCol = (defaultCol + (advanced.value ? advancedCol : 0)) % 24;
-  /** 没有多余的就占满一行，否则就算出还剩余几份 */
-  const actionSpan = redunCol === 0 ? 24 : 24 - redunCol;
-  const actionColOpt = {
-    span: actionSpan
-  };
-  return actionColOpt;
-});
-
-const hasAdvanced = computed(() => {
-  const { advanced: advancedSlot } = useSlots();
-  return Boolean(advancedSlot && advancedSlot().length > 0);
-});
-
-function handleAdvanced() {
-  advanced.value = !advanced.value;
+::-webkit-scrollbar
+{
+  width : 10px;  /*高宽分别对应横竖滚动条的尺寸*/
+  height: 1px;
 }
-function handleReset() {
-  emit('reset');
+::-webkit-scrollbar-thumb {
+  /*滚动条里面小方块*/
+  border-radius: 10px;
+  box-shadow   : inset 0 0 5px rgba(0, 0, 0, 0.1);
+  background   : #666;
+  transition: background 1s;
 }
-function handleSearch() {
-  emit('search');
+::-webkit-scrollbar-track {
+  /*滚动条里面轨道*/
+  box-shadow   : inset 0 0 5px rgba(0, 0, 0, 0.1);
+  border-radius: 10px;
+  background   : #ededed;
 }
-</script>
-<style>
-.el-row {
-  margin: 0 !important;
-}
-.el-form {
-  width: 100%;
-}
-.grid-content {
-  border-radius: 4px;
-  min-height: 36px;
-  background: #d5dce5;
-}
-.search-action {
-  display: flex;
-  align-items: center;
-  justify-content: flex-end;
-}
-</style>
-
-//////////////////////////////////////////////
-<template>
-  <main>
-    <el-form label-position="right" label-width="100px">
-      <SearchForm>
-        <el-col :span="6">
-          <el-form-item label="活动名称">
-            <el-input v-model="formLabelAlign.name" style="width: 100%" />
-          </el-form-item>
-        </el-col>
-        <el-col :span="6">
-          <el-form-item label="活动名称">
-            <el-input v-model="formLabelAlign.name" style="width: 100%" />
-          </el-form-item>
-        </el-col>
-        <el-col :span="6">
-          <el-form-item label="活动名称">
-            <el-input v-model="formLabelAlign.name" style="width: 100%" />
-          </el-form-item>
-        </el-col>
-        <template #advanced>
-          <el-col :span="6">
-            <el-form-item label="活动名称">
-              <el-input v-model="formLabelAlign.name" style="width: 100%" />
-            </el-form-item>
-          </el-col>
-          <el-col :span="6">
-            <el-form-item label="活动名称">
-              <el-input v-model="formLabelAlign.name" style="width: 100%" />
-            </el-form-item>
-          </el-col>
-          <el-col :span="14">
-            <el-form-item label="活动名称">
-              <el-input v-model="formLabelAlign.name" style="width: 100%" />
-            </el-form-item>
-          </el-col>
-        </template>
-      </SearchForm>
-    </el-form>
-  </main>
-</template>
-<script>
-export default {
-  components: {
-    SearchForm: () => import('@/components/TheWelcome.vue')
-  },
-  data() {
-    return {
-      formLabelAlign: {
-        name: '',
-        region: '',
-        type: ''
-      }
-    };
-  }
-};
-</script>
-
