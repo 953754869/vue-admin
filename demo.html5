@@ -1,3 +1,31 @@
+<!DOCTYPE html>
+<html lang="en">
+ 
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Document</title>
+</head>
+<style>
+ 
+ 
+  .list {
+    height: 30px;
+    line-height: 30px;
+    width: 500px;
+    margin: 0 auto;
+    height: 200px;
+    overflow: hidden;
+    border: 1px solid #ccc;
+    padding: 10px;
+    transition: all 0.3s;
+  }
+ 
+.list:hover{
+  overflow: auto;
+}
+ 
+  
 ::-webkit-scrollbar
 {
   width : 10px;  /*高宽分别对应横竖滚动条的尺寸*/
@@ -16,3 +44,23 @@
   border-radius: 10px;
   background   : #ededed;
 }
+ 
+</style>
+ 
+<body>
+  <div class="list">
+    <div class="list-item">item</div>
+    <div class="list-item">item</div>
+    <div class="list-item">item</div>
+    <div class="list-item">item</div>
+    <div class="list-item">item</div>
+    <div class="list-item">item</div>
+    <div class="list-item">item</div>
+    <div class="list-item">item</div>
+    <div class="list-item">item</div>
+    <div class="list-item">item</div>
+    <div class="list-item">item</div>
+  </div>
+</body>
+ 
+</html>
