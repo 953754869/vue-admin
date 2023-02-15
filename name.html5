@@ -1,69 +1,281 @@
+<div>
+ <ag-grid-vue
+    :selectCol="selectCol"
+    :rowHeight="rowHeight"
+    :headerHeight="headerHeight"
+    :minColWidth="minColWidth"
+    class="ag-theme-balham"
+    style="height: 400px"
+    @gridReady="onGridReady"
+    :columnDefs="columnDefs"
+    :rowData="rowData"
+    cacheBlockSize="0"
+    maxBlocksInCache="0"
+    :animateRows="true"
+    :pagination="true"
+    :defaultColDef="defaultColDef"
+    :context="context"
+    :gridOptions="gridOptions"
+  >
+  </ag-grid-vue>
+  <div class="my_pagination">
+    <el-pagination
+      @size-change="handleSizeChange"
+      @current-change="handleCurrentChange"
+      :current-page.sync=searchForm.currentPage
+      :page-sizes="[20, 50, 100, 200, 300]"
+      :page-size=searchForm.pageSize
+      layout="total, sizes, prev, pager, next, jumper"
+      :total="totalRows"
+      background
+      >
+    </el-pagination>
+  </div>
+</div>
 
-// 使用方法为：
-// 把该文件复制到要修改文件名的目录下；
-// 然后打开node.js执行node changeName.js命令；
-// 修改完成！
-// 可以在下面注释的地方自定义修改的逻辑；
- 
- 
-var fs = require('fs');
-var path = require('path');
-//解析需要遍历的文件夹，我的changName.js和27670326文件夹是同一个目录，27670326文件夹就是我要处理的文件夹
-var filePath = path.resolve('./vue-admin-template-permission-control');
- 
- 
-//调用文件遍历方法
-fileDisplay(filePath);
- 
-/**
- * 文件遍历方法
- * @param filePath 需要遍历的文件路径
- */
-function fileDisplay(filePath){
-//   console.log(8977)
-    //根据文件路径读取文件，返回文件列表
-    fs.readdir(filePath,function(err,files){
-        if(err){
-            console.warn(err)
-        }else{
-            //遍历读取到的文件列表
-            files.forEach(function(filename){
-                //获取当前文件的绝对路径
-                var filedir = path.join(filePath,filename);
-                //根据文件路径获取文件信息，返回一个fs.Stats对象
-                fs.stat(filedir,function(eror,stats){
-                    if(eror){
-                        console.warn('获取文件stats失败');
-                    }else{
-                        var isFile = stats.isFile();//是文件
-                        var isDir = stats.isDirectory();//是文件夹
-                        if(isFile){
- 
-                            //这里请根据需要替换后缀名，我的是要把.blv替换成.flv
- 
-                            if(filedir.indexOf('.js')!=-1){
-                                filedir.replace('.js','.html5')
-                                rename(filedir,filedir.replace('.js','.html5',function(){
-                                }))
-                            }
-                        }
-                        if(isDir){
-                            fileDisplay(filedir);//递归，如果是文件夹，就继续遍历该文件夹下面的文件
-                        }
-                    }
-                })
-            });
-        }
-    });
-}
- 
- 
- 
-// 修改文件名称
-function rename (oldPath, newPath) {
-    fs.rename(oldPath, newPath, function(err) {
-        if (err) {
-            throw err;
-        }
-    });
-}
+
+<div>
+ <ag-grid-vue
+    :selectCol="selectCol"
+    :rowHeight="rowHeight"
+    :headerHeight="headerHeight"
+    :minColWidth="minColWidth"
+    class="ag-theme-balham"
+    style="height: 400px"
+    @gridReady="onGridReady"
+    :columnDefs="columnDefs"
+    :rowData="rowData"
+    cacheBlockSize="0"
+    maxBlocksInCache="0"
+    :animateRows="true"
+    :pagination="true"
+    :defaultColDef="defaultColDef"
+    :context="context"
+    :gridOptions="gridOptions"
+  >
+  </ag-grid-vue>
+  <div class="my_pagination">
+    <el-pagination
+      @size-change="handleSizeChange"
+      @current-change="handleCurrentChange"
+      :current-page.sync=searchForm.currentPage
+      :page-sizes="[20, 50, 100, 200, 300]"
+      :page-size=searchForm.pageSize
+      layout="total, sizes, prev, pager, next, jumper"
+      :total="totalRows"
+      background
+      >
+    </el-pagination>
+  </div>
+</div>
+
+
+<template>
+  <div>
+    <ag-grid-vue
+      :selectCol="selectCol"
+      :rowHeight="rowHeight"
+      :headerHeight="headerHeight"
+      :minColWidth="minColWidth"
+      class="ag-theme-balham"
+      style="height: 400px"
+      @gridReady="onGridReady"
+      :columnDefs="columnDefs"
+      :rowData="rowData"
+      cacheBlockSize="0"
+      maxBlocksInCache="0"
+      :animateRows="true"
+      :pagination="true"
+      :defaultColDef="defaultColDef"
+      :context="context"
+      :gridOptions="gridOptions"
+    >
+    </ag-grid-vue>
+    <div class="my_pagination">
+      <el-pagination
+        @size-change="handleSizeChange"
+        @current-change="handleCurrentChange"
+        :current-page.sync=searchForm.currentPage
+        :page-sizes="[20, 50, 100, 200, 300]"
+        :page-size=searchForm.pageSize
+        layout="total, sizes, prev, pager, next, jumper"
+        :total="totalRows"
+        background
+        >
+      </el-pagination>
+    </div>
+  </div>
+</template>
+<script>
+import Storage from 'store2'
+export default {
+  name: "agGridDemo",
+  data() {
+    return {
+    // 请求参数
+      searchForm: {
+        currentPage: 1,
+        pageSize: 20,
+      },
+      totalRows: 0,// 列表总条数
+      // 表格属性
+      rowHeight: 48,
+      headerHeight: 40,
+      rowStyle: {
+        background: "white",
+      },
+      minColWidth: 20,
+      gridName: "myGridName",
+      defaultColDef: null,
+      columnDefs: null,
+      gridApi: null,
+      gridColumnApi: null,
+      rowData: [],
+      frameworkComponents: null,
+      context: null,
+      selectCol: {
+        headerName: "",
+        width: 30,
+        maxWidth: 30,
+      },
+      gridOptions: {},
+      tooltipShowDelay: null,
+    };
+  },
+  beforeMount() {
+    this.columnDefs = [
+      {
+        headerName: "时间",
+        field: "dateStr",
+      },
+      {
+        headerName: "销量",
+        field: "sales",
+      },
+      {
+        headerName: "订单量",
+        field: "orderQuantity",
+      },
+      {
+        headerName: "价格",
+        field: "price",
+      }
+    ];
+    this.defaultColDef = {
+      valueFormatter: this.valueFormatter,
+      resizable: true,
+      suppressSizeToFit: true,
+      editable: true,
+      lockPinned: true,
+      cellEditor: "agLargeTextCellEditor",
+      tooltipComponent: "customTooltip",
+      sortable: true
+    };
+    this.frameworkComponents = {};
+    this.context = { componentParent: this };
+    this.tooltipShowDelay = 0;
+  },
+  methods: {
+    onGridReady(params) {
+      this.gridApi = params.api;
+      this.gridColumnApi = params.columnApi;
+      this.setGridColumn(this.gridName);
+      // 此处应该调接口，接口模拟接口返回的数据，渲染给表格
+      var list = [
+        {
+          dateStr: '2020-11-11',
+          sales: 10,
+          orderQuantity: 20,
+          price: 30,
+        },
+        {
+          dateStr: '2020-11-12',
+          sales: 11,
+          orderQuantity: 22,
+          price: 33,
+        },
+        {
+          dateStr: '2020-11-13',
+          sales: 10,
+          orderQuantity: 20,
+          price: 30,
+        },
+        {
+          dateStr: '2020-11-14',
+          sales: 11,
+          orderQuantity: 22,
+          price: 33,
+        },
+        {
+          dateStr: '2020-11-15',
+          sales: 10,
+          orderQuantity: 20,
+          price: 30,
+        },
+        {
+          dateStr: '2020-11-16',
+          sales: 11,
+          orderQuantity: 22,
+          price: 33,
+        },
+        {
+          dateStr: '2020-11-17',
+          sales: 10,
+          orderQuantity: 20,
+          price: 30,
+        },
+        {
+          dateStr: '2020-11-18',
+          sales: 11,
+          orderQuantity: 22,
+          price: 33,
+        },
+        {
+          dateStr: '2020-11-19',
+          sales: 10,
+          orderQuantity: 20,
+          price: 30,
+        },
+        {
+          dateStr: '2020-11-20',
+          sales: 11,
+          orderQuantity: 22,
+          price: 33,
+        },
+        {
+          dateStr: '2020-11-21',
+          sales: 10,
+          orderQuantity: 20,
+          price: 30,
+        },
+        {
+          dateStr: '2020-11-22',
+          sales: 11,
+          orderQuantity: 22,
+          price: 33,
+        },
+      ]
+      this.rowData = list
+      this.totalRows = list.length
+      // 调整表格列宽大小自适应
+      this.gridApi.sizeColumnsToFit();
+    },
+     /* 设置列表的字段 */
+    setGridColumn(gridName){
+      let gridColumn = Storage.namespace('gridColumn')
+      if (gridColumn.get(gridName)){
+        this.gridColumnApi.setColumnState(gridColumn.get(gridName))
+      }
+    },
+    // element-ui分页
+    handleSizeChange(val) {
+      this.searchForm.pageSize = val;
+      // 调接口
+    },
+    handleCurrentChange(val) {
+      this.searchForm.currentPage = val;
+      // 调接口
+    }
+  },
+};
+</script>
