@@ -1,281 +1,86 @@
-<div>
- <ag-grid-vue
-    :selectCol="selectCol"
-    :rowHeight="rowHeight"
-    :headerHeight="headerHeight"
-    :minColWidth="minColWidth"
-    class="ag-theme-balham"
-    style="height: 400px"
-    @gridReady="onGridReady"
-    :columnDefs="columnDefs"
-    :rowData="rowData"
-    cacheBlockSize="0"
-    maxBlocksInCache="0"
-    :animateRows="true"
-    :pagination="true"
-    :defaultColDef="defaultColDef"
-    :context="context"
-    :gridOptions="gridOptions"
-  >
-  </ag-grid-vue>
-  <div class="my_pagination">
-    <el-pagination
-      @size-change="handleSizeChange"
-      @current-change="handleCurrentChange"
-      :current-page.sync=searchForm.currentPage
-      :page-sizes="[20, 50, 100, 200, 300]"
-      :page-size=searchForm.pageSize
-      layout="total, sizes, prev, pager, next, jumper"
-      :total="totalRows"
-      background
-      >
-    </el-pagination>
-  </div>
-</div>
+首先建一个copyComm.js的文件
 
+const vCopy = { // 名字爱取啥取啥
+  /*
+    bind 钩子函数，第一次绑定时调用，可以在这里做初始化设置
+    el: 作用的 dom 对象
+    value: 传给指令的值，也就是我们要 copy 的值
+  */
+  bind(el, { value }) {
+    el.$value = value; // 用一个全局属性来存传进来的值，因为这个值在别的钩子函数里还会用到
+    el.handler = () => {
+      if (!el.$value) {
+        // 值为空的时候，给出提示，我这里的提示是用的 ant-design-vue 的提示，你们随意
+       console.log('无复制内容');
+        return;
+      }
+      // 动态创建 textarea 标签
+      const textarea = document.createElement('textarea');
+      // 将该 textarea 设为 readonly 防止 iOS 下自动唤起键盘，同时将 textarea 移出可视区域
+      textarea.readOnly = 'readonly';
+      textarea.style.position = 'absolute';
+      textarea.style.left = '-9999px';
+      // 将要 copy 的值赋给 textarea 标签的 value 属性
+      textarea.value = el.$value;
+      // 将 textarea 插入到 body 中
+      document.body.appendChild(textarea);
+      // 选中值并复制
+      textarea.select();
+      textarea.setSelectionRange(0, textarea.value.length);
+      const result = document.execCommand('Copy');
+      if (result) {
+        console.log('复制成功');
+      }
+      document.body.removeChild(textarea);
+    };
+    // 绑定点击事件，就是所谓的一键 copy 啦
+    el.addEventListener('click', el.handler);
+  },
+  // 当传进来的值更新的时候触发
+  componentUpdated(el, { value }) {
+    el.$value = value;
+  },
+  // 指令与元素解绑的时候，移除事件绑定
+  unbind(el) {
+    el.removeEventListener('click', el.handler);
+  },
+};
+export default vCopy;
+在建一个directives.js文件来注册所有的全局指令
+import copy from './copyComm.js';
+// 自定义指令
+const directives = {
+  copy,
+};
+// 这种写法可以批量注册指令
+export default {
+  install(Vue) {
+    Object.keys(directives).forEach((key) => {
+      Vue.directive(key, directives[key]);
+    });
+  },
+};
+////////////
+import Vue from 'vue';
+import Directives from './directives';
+Vue.use(Directives);
 
-<div>
- <ag-grid-vue
-    :selectCol="selectCol"
-    :rowHeight="rowHeight"
-    :headerHeight="headerHeight"
-    :minColWidth="minColWidth"
-    class="ag-theme-balham"
-    style="height: 400px"
-    @gridReady="onGridReady"
-    :columnDefs="columnDefs"
-    :rowData="rowData"
-    cacheBlockSize="0"
-    maxBlocksInCache="0"
-    :animateRows="true"
-    :pagination="true"
-    :defaultColDef="defaultColDef"
-    :context="context"
-    :gridOptions="gridOptions"
-  >
-  </ag-grid-vue>
-  <div class="my_pagination">
-    <el-pagination
-      @size-change="handleSizeChange"
-      @current-change="handleCurrentChange"
-      :current-page.sync=searchForm.currentPage
-      :page-sizes="[20, 50, 100, 200, 300]"
-      :page-size=searchForm.pageSize
-      layout="total, sizes, prev, pager, next, jumper"
-      :total="totalRows"
-      background
-      >
-    </el-pagination>
-  </div>
-</div>
 
 
 <template>
-  <div>
-    <ag-grid-vue
-      :selectCol="selectCol"
-      :rowHeight="rowHeight"
-      :headerHeight="headerHeight"
-      :minColWidth="minColWidth"
-      class="ag-theme-balham"
-      style="height: 400px"
-      @gridReady="onGridReady"
-      :columnDefs="columnDefs"
-      :rowData="rowData"
-      cacheBlockSize="0"
-      maxBlocksInCache="0"
-      :animateRows="true"
-      :pagination="true"
-      :defaultColDef="defaultColDef"
-      :context="context"
-      :gridOptions="gridOptions"
-    >
-    </ag-grid-vue>
-    <div class="my_pagination">
-      <el-pagination
-        @size-change="handleSizeChange"
-        @current-change="handleCurrentChange"
-        :current-page.sync=searchForm.currentPage
-        :page-sizes="[20, 50, 100, 200, 300]"
-        :page-size=searchForm.pageSize
-        layout="total, sizes, prev, pager, next, jumper"
-        :total="totalRows"
-        background
-        >
-      </el-pagination>
-    </div>
+  <div >
+    <button v-copy="copyText">拷贝</button>
   </div>
 </template>
+
 <script>
-import Storage from 'store2'
-export default {
-  name: "agGridDemo",
-  data() {
-    return {
-    // 请求参数
-      searchForm: {
-        currentPage: 1,
-        pageSize: 20,
-      },
-      totalRows: 0,// 列表总条数
-      // 表格属性
-      rowHeight: 48,
-      headerHeight: 40,
-      rowStyle: {
-        background: "white",
-      },
-      minColWidth: 20,
-      gridName: "myGridName",
-      defaultColDef: null,
-      columnDefs: null,
-      gridApi: null,
-      gridColumnApi: null,
-      rowData: [],
-      frameworkComponents: null,
-      context: null,
-      selectCol: {
-        headerName: "",
-        width: 30,
-        maxWidth: 30,
-      },
-      gridOptions: {},
-      tooltipShowDelay: null,
-    };
-  },
-  beforeMount() {
-    this.columnDefs = [
-      {
-        headerName: "时间",
-        field: "dateStr",
-      },
-      {
-        headerName: "销量",
-        field: "sales",
-      },
-      {
-        headerName: "订单量",
-        field: "orderQuantity",
-      },
-      {
-        headerName: "价格",
-        field: "price",
-      }
-    ];
-    this.defaultColDef = {
-      valueFormatter: this.valueFormatter,
-      resizable: true,
-      suppressSizeToFit: true,
-      editable: true,
-      lockPinned: true,
-      cellEditor: "agLargeTextCellEditor",
-      tooltipComponent: "customTooltip",
-      sortable: true
-    };
-    this.frameworkComponents = {};
-    this.context = { componentParent: this };
-    this.tooltipShowDelay = 0;
-  },
-  methods: {
-    onGridReady(params) {
-      this.gridApi = params.api;
-      this.gridColumnApi = params.columnApi;
-      this.setGridColumn(this.gridName);
-      // 此处应该调接口，接口模拟接口返回的数据，渲染给表格
-      var list = [
-        {
-          dateStr: '2020-11-11',
-          sales: 10,
-          orderQuantity: 20,
-          price: 30,
-        },
-        {
-          dateStr: '2020-11-12',
-          sales: 11,
-          orderQuantity: 22,
-          price: 33,
-        },
-        {
-          dateStr: '2020-11-13',
-          sales: 10,
-          orderQuantity: 20,
-          price: 30,
-        },
-        {
-          dateStr: '2020-11-14',
-          sales: 11,
-          orderQuantity: 22,
-          price: 33,
-        },
-        {
-          dateStr: '2020-11-15',
-          sales: 10,
-          orderQuantity: 20,
-          price: 30,
-        },
-        {
-          dateStr: '2020-11-16',
-          sales: 11,
-          orderQuantity: 22,
-          price: 33,
-        },
-        {
-          dateStr: '2020-11-17',
-          sales: 10,
-          orderQuantity: 20,
-          price: 30,
-        },
-        {
-          dateStr: '2020-11-18',
-          sales: 11,
-          orderQuantity: 22,
-          price: 33,
-        },
-        {
-          dateStr: '2020-11-19',
-          sales: 10,
-          orderQuantity: 20,
-          price: 30,
-        },
-        {
-          dateStr: '2020-11-20',
-          sales: 11,
-          orderQuantity: 22,
-          price: 33,
-        },
-        {
-          dateStr: '2020-11-21',
-          sales: 10,
-          orderQuantity: 20,
-          price: 30,
-        },
-        {
-          dateStr: '2020-11-22',
-          sales: 11,
-          orderQuantity: 22,
-          price: 33,
-        },
-      ]
-      this.rowData = list
-      this.totalRows = list.length
-      // 调整表格列宽大小自适应
-      this.gridApi.sizeColumnsToFit();
-    },
-     /* 设置列表的字段 */
-    setGridColumn(gridName){
-      let gridColumn = Storage.namespace('gridColumn')
-      if (gridColumn.get(gridName)){
-        this.gridColumnApi.setColumnState(gridColumn.get(gridName))
+  export default {
+    data(){
+      return {
+        copyText:'要copy的内容'
       }
     },
-    // element-ui分页
-    handleSizeChange(val) {
-      this.searchForm.pageSize = val;
-      // 调接口
-    },
-    handleCurrentChange(val) {
-      this.searchForm.currentPage = val;
-      // 调接口
-    }
-  },
-};
+    methods: {},
+    mounted () {},
+  }
 </script>
