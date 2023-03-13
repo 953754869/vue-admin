@@ -1,58 +1,26 @@
-先在组件文件夹下，如utils目录下新建 clipboard.js 文件
-
-写入以下代码：
-import Clipboard from 'clipboard';
-
-function clipboardSuccess() {
-    console.log("复制成功")
-    //你可以在这里设置你的提示
-}
-function clipboardError() {
-    console.log("复制失败")
-}
-
-export default function handleCopy(text, event, onSuccess, onError) {
-    event = event || {};
-    const clipboard = new Clipboard(event.target, {
-        text: () => text,
-    });
-    clipboard.on('success', () => {
-        onSuccess ? onSuccess() : clipboardSuccess();
-        clipboard.off('error');
-        clipboard.off('success');
-        clipboard.destroy();
-    });
-    clipboard.on('error', () => {
-        onError ? onError() : clipboardError();
-        clipboard.off('error');
-        clipboard.off('success');
-        clipboard.destroy();
-    });
-    clipboard.onClick(event);
-}
+ <template>
+  <el-transfer ref="transfer" id="transfer" v-model="value" :data="data">
+   <span slot-scope="{ option }" :draggable="!option.disabled"  @dragstart="drag($event,option)">{{ option.id}} - {{ option.label }}</span>
+  </el-transfer>
+</template>``
 
 
 
-
-
-
-
-
-
-<div @click="copyValue('嘻嘻', $event)">点我</div>
-
-
-import handleCopy from '@/utils/clipboard'
-
-methods:{
-    copyValue(text, e){
-        let value=text  //这里设置你要复制的文本信息，可以是text，也可以从e中获取，也可以自定义
-        handleCopy(value, e, ()=>{
-            console.log("这是复制成功回调函数")
-            alert("复制成功！")
-        },()=>{
-            console.log("这是复制失败回调函数")
+<script>
+import Sortable from 'sortablejs'
+methods: {
+    drag(ev,option) {
+       this.draggingKey = option.id
+       const transfer = this.$refs.transfer.$el
+       const leftPanel = transfer.getElementsByClassName("el-transfer-panel")[0].getElementsByClassName("el-transfer-panel__body")[0];
+       const rightPanel = transfer.getElementsByClassName("el-transfer-panel")[1].getElementsByClassName("el-transfer-panel__body")[0];
+       const rightEl = rightPanel.getElementsByClassName("el-transfer-panel__list")[0]
+       Sortable.create(rightEl,{
+          onEnd: (evt) => {
+            const {oldIndex,newIndex} = evt;
+            this.tableData.splice(newIndex,0,this.tableData.splice(oldIndex, 1)[0])
+          }
         })
     }
 }
-
+</script>
