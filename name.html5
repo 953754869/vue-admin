@@ -1,75 +1,51 @@
-  <template>
-  <el-transfer ref="transfer" id="transfer" v-model="value" :data="data">
-   <span slot-scope="{ option }" :draggable="!option.disabled" @dragstart="drag($event,option)">{{ option.key }} - {{ option.label }}</span>
-  </el-transfer>
-</template>```
-  <script>
-
-   import Sortable from 'sortablejs'
-
-   export default {
-      data() {
-        const generateData = _ => {
-          const data = []; for (let i = 1; i <= 15; i++) {
-            data.push({
-              key: i,
-              label: `备选项 ${i}`,
-              disabled: i % 4 === 0 });
-          } return data;
-        }; return {
-          data: generateData(),
-          value: [1, 4],
-          draggingKey : null }
-      },
-      mounted() {
-        const transfer = this.$refs.transfer.$el
-        const leftPanel = transfer.getElementsByClassName("el-transfer-panel")[0].getElementsByClassName("el-transfer-panel__body")[0];
-        const rightPanel = transfer.getElementsByClassName("el-transfer-panel")[1].getElementsByClassName("el-transfer-panel__body")[0];
-        const rightEl = rightPanel.getElementsByClassName("el-transfer-panel__list")[0]
-        Sortable.create(rightEl,{
-          onEnd: (evt) => {
-            const {oldIndex,newIndex} = evt;
-            const temp = this.value[oldIndex]
-            if (!temp || temp === 'undefined') {
-              return
-            }// 解决右边最后一项从右边拖左边，有undefined的问题
-            this.$set(this.value,oldIndex,this.value[newIndex])
-            this.$set(this.value,newIndex,temp)
-          }
-        })
-        const leftEl = leftPanel.getElementsByClassName("el-transfer-panel__list")[0]
-        Sortable.create(leftEl,{
-          onEnd: (evt) => {
-            const {oldIndex,newIndex} = evt;
-            const temp = this.data[oldIndex]
-            if (!temp || temp === 'undefined') {
-              return
-            } // 解决右边最后一项从右边拖左边，有undefined的问题
-            this.$set(this.data,oldIndex,this.data[newIndex])
-            this.$set(this.data,newIndex,temp)
-          }
-        })
-        leftPanel.ondragover = (ev) => {
-          ev.preventDefault()
-        }
-        leftPanel.ondrop = (ev) => {
-          ev.preventDefault();
-          const index = this.value.indexOf(this.draggingKey) if(index !== -1){ this.value.splice(index,1)
-          }
-        }
-        rightPanel.ondragover = (ev) => {
-          ev.preventDefault()
-        }
-        rightPanel.ondrop = (ev) => {
-          ev.preventDefault();  if(this.value.indexOf(this.draggingKey) === -1){ this.value.push(this.draggingKey)
-          }
-        }
-      },
-      methods: {
-        drag(ev,option) { this.draggingKey = option.key
-        }
+export function download(url, params, filename,post=true) {
+  downloadLoadingInstance = Loading.service({ text: "正在下载数据，请稍候", spinner: "el-icon-loading", background: "rgba(0, 0, 0, 0.7)", })
+  if(post){
+    return service.post(url, params, {
+      transformRequest: [(params) => { return tansParams(params) }],
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      responseType: 'blob'
+    }).then(async (data) => {
+      const isLogin = await blobValidate(data);
+      if (isLogin) {
+        const blob = new Blob([data])
+        saveAs(blob, filename)
+      } else {
+        const resText = await data.text();
+        const rspObj = JSON.parse(resText);
+        const errMsg = errorCode[rspObj.code] || rspObj.msg || errorCode['default']
+        Message.error(errMsg);
       }
+      downloadLoadingInstance.close();
+    }).catch((r) => {
+      console.error(r)
+      Message.error('下载文件出现错误，请联系管理员！')
+      downloadLoadingInstance.close();
+    })
+  }
+  else {
+    return service.get(url, params, {
+      transformRequest: [(params) => { return tansParams(params) }],
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      responseType: 'blob'
+    }).then(async (data) => {
+      const isLogin = await blobValidate(data);
+      if (isLogin) {
+        const blob = new Blob([data])
+        saveAs(blob, filename)
+      } else {
+        const resText = await data.text();
+        const rspObj = JSON.parse(resText);
+        const errMsg = errorCode[rspObj.code] || rspObj.msg || errorCode['default']
+        Message.error(errMsg);
+      }
+      downloadLoadingInstance.close();
+    }).catch((r) => {
+      console.error(r)
+      Message.error('下载文件出现错误，请联系管理员！')
+      downloadLoadingInstance.close();
+    })
+  }
 
-    }
-</script>
 
+}
