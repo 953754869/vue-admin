@@ -1,223 +1,150 @@
-import axios from 'axios'
-import { Notification, MessageBox, Message, Loading } from 'element-ui'
-import store from '@/store'
-import { getToken } from '@/utils/auth'
-import errorCode from '@/utils/errorCode'
-import { tansParams, blobValidate } from "@/utils/ruoyi";
-import cache from '@/plugins/cache'
-import { saveAs } from 'file-saver'
+import { Message } from 'element-ui'
+import { getToken } from '@/utils/authToken' // 与后端的协商，websocket请求需要带上token参数
+let websock = null
+let messageCallback = null
+let errorCallback = null
+let wsUrl = ''
+let tryTime = 0
 
-let downloadLoadingInstance;
-// 是否显示重新登录
-export let isRelogin = { show: false };
-
-axios.defaults.headers['Content-Type'] = 'application/json;charset=utf-8'
-// 创建axios实例
-const service = axios.create({
-  // axios中请求配置有baseURL选项，表示请求URL公共部分
-  baseURL: process.env.VUE_APP_BASE_API,
-  // 超时
-  timeout: 30000
-})
-
-// request拦截器
-service.interceptors.request.use(config => {
-  // 是否需要设置 token
-  const isToken = (config.headers || {}).isToken === false
-  // 是否需要防止数据重复提交
-  const isRepeatSubmit = (config.headers || {}).repeatSubmit === false
-  if (getToken() && !isToken) {
-    config.headers['Authorization'] = 'Bearer ' + getToken() // 让每个请求携带自定义token 请根据实际情况自行修改
-  }
-  // get请求映射params参数
-  if (config.method === 'get' && config.params) {
-    let url = config.url + '?' + tansParams(config.params);
-    url = url.slice(0, -1);
-    config.params = {};
-    config.url = url;
-  }
-  if (!isRepeatSubmit && (config.method === 'post' || config.method === 'put')) {
-    const requestObj = {
-      url: config.url,
-      data: typeof config.data === 'object' ? JSON.stringify(config.data) : config.data,
-      time: new Date().getTime()
-    }
-    const sessionObj = cache.session.getJSON('sessionObj')
-    if (sessionObj === undefined || sessionObj === null || sessionObj === '') {
-      cache.session.setJSON('sessionObj', requestObj)
-    } else {
-      const s_url = sessionObj.url;                  // 请求地址
-      const s_data = sessionObj.data;                // 请求数据
-      const s_time = sessionObj.time;                // 请求时间
-      const interval = 1000;                         // 间隔时间(ms)，小于此时间视为重复提交
-      if (s_data === requestObj.data && requestObj.time - s_time < interval && s_url === requestObj.url) {
-        const message = '数据正在处理，请勿重复提交';
-        console.warn(`[${s_url}]: ` + message)
-        return Promise.reject(new Error(message))
-      } else {
-        cache.session.setJSON('sessionObj', requestObj)
-      }
-    }
-  }
-  return config
-}, error => {
-    console.log(error)
-    Promise.reject(error)
-})
-
-// 响应拦截器
-service.interceptors.response.use(res => {
-    // 未设置状态码则默认成功状态
-    const code = res.data.code || 200;
-    // 获取错误信息
-    const msg = errorCode[code] || res.data.msg || errorCode['default']
-    // 二进制数据则直接返回
-    if(res.request.responseType ===  'blob' || res.request.responseType ===  'arraybuffer'){
-      return res.data
-    }
-    if (code === 401) {
-      if (!isRelogin.show) {
-        isRelogin.show = true;
-        MessageBox.confirm('登录状态已过期，您可以继续留在该页面，或者重新登录', '系统提示', {
-          confirmButtonText: '重新登录',
-          cancelButtonText: '取消',
-          type: 'warning'
-        }
-      ).then(() => {
-        isRelogin.show = false;
-        store.dispatch('LogOut').then(() => {
-          location.href = '/index';
-        })
-      }).catch(() => {
-        isRelogin.show = false;
-      });
-    }
-      return Promise.reject('无效的会话，或者会话已过期，请重新登录。')
-    } else if (code === 500) {
-      Message({
-        message: msg,
-        type: 'error'
-      })
-      return Promise.reject(new Error(msg))
-    } else if (code !== 200) {
-      Notification.error({
-        title: msg
-      })
-      return Promise.reject('error')
-    } else {
-      return res.data
-    }
-  },
-  error => {
-    console.log('err' + error)
-    let { message } = error;
-    if (message == "Network Error") {
-      message = "后端接口连接异常";
-    }
-    else if (message.includes("timeout")) {
-      message = "系统接口请求超时";
-    }
-    else if (message.includes("Request failed with status code")) {
-      message = "系统接口" + message.substr(message.length - 3) + "异常";
-    }
-    Message({
-      message: message,
-      type: 'error',
-      duration: 5 * 1000
-    })
-    return Promise.reject(error)
-  }
-)
-
-// 通用下载方法
-export function download(url, params, filename,post=true) {
-  downloadLoadingInstance = Loading.service({ text: "正在下载数据，请稍候", spinner: "el-icon-loading", background: "rgba(0, 0, 0, 0.7)", })
-  if(post){
-    return service.post(url, params, {
-      transformRequest: [(params) => { return tansParams(params) }],
-      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-      responseType: 'blob'
-    }).then(async (data) => {
-      const isLogin = await blobValidate(data);
-      if (isLogin) {
-        const blob = new Blob([data])
-        saveAs(blob, filename)
-      } else {
-        const resText = await data.text();
-        const rspObj = JSON.parse(resText);
-        const errMsg = errorCode[rspObj.code] || rspObj.msg || errorCode['default']
-        Message.error(errMsg);
-      }
-      downloadLoadingInstance.close();
-    }).catch((r) => {
-      console.error(r)
-      Message.error('下载文件出现错误，请联系管理员！')
-      downloadLoadingInstance.close();
-    })
-  }
-  else {
-    return service.get(url, params, {
-      transformRequest: [(params) => { return tansParams(params) }],
-      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-      responseType: 'blob'
-    }).then(async (data) => {
-      const isLogin = await blobValidate(data);
-      if (isLogin) {
-        const blob = new Blob([data])
-        saveAs(blob, filename)
-      } else {
-        const resText = await data.text();
-        const rspObj = JSON.parse(resText);
-        const errMsg = errorCode[rspObj.code] || rspObj.msg || errorCode['default']
-        Message.error(errMsg);
-      }
-      downloadLoadingInstance.close();
-    }).catch((r) => {
-      console.error(r)
-      Message.error('下载文件出现错误，请联系管理员！')
-      downloadLoadingInstance.close();
-    })
-  }
-
-
+// 接收ws后端返回的数据
+function websocketonmessage (e) {
+  messageCallback(JSON.parse(e.data))
 }
 
-export default service
-
-
-
-
-
-
-
-export function tansParams(params) {
-  let result = ''
-  for (const propName of Object.keys(params)) {
-    const value = params[propName];
-    var part = encodeURIComponent(propName) + "=";
-    if (value !== null && typeof (value) !== "undefined") {
-      if (typeof value === 'object') {
-        for (const key of Object.keys(value)) {
-          if (value[key] !== null && typeof (value[key]) !== 'undefined') {
-            let params = propName + '[' + key + ']';
-            var subPart = encodeURIComponent(params) + "=";
-            result += subPart + encodeURIComponent(value[key]) + "&";
-          }
-        }
-      } else {
-        result += part + encodeURIComponent(value) + "&";
-      }
+/**
+ * 发起websocket连接
+ * @param {Object} agentData 需要向后台传递的参数数据
+ */
+function websocketSend (agentData) {
+  // 加延迟是为了尽量让ws连接状态变为OPEN
+  setTimeout(() => {
+    // 添加状态判断，当为OPEN时，发送消息
+    if (websock.readyState === websock.OPEN) { // websock.OPEN = 1
+      // 发给后端的数据需要字符串化
+      websock.send(JSON.stringify(agentData))
     }
-  }
-  return result
+    if (websock.readyState === websock.CLOSED) { // websock.CLOSED = 3
+      console.log('websock.readyState=3')
+      Message.error('ws连接异常，请稍候重试')
+      errorCallback()
+    }
+  }, 500)
 }
-// 验证是否为blob格式
-export async function blobValidate(data) {
-  try {
-    const text = await data.text();
-    JSON.parse(text);
-    return false;
-  } catch (error) {
-    return true;
+
+// 关闭ws连接
+function websocketclose (e) {
+  // e.code === 1000  表示正常关闭。 无论为何目的而创建, 该链接都已成功完成任务。
+  // e.code !== 1000  表示非正常关闭。
+  if (e && e.code !== 1000) {
+    Message.error('ws连接异常，请稍候重试')
+    errorCallback()
+    // // 如果需要设置异常重连则可替换为下面的代码，自行进行测试
+    // if (tryTime < 10) {
+    //   setTimeout(function() {
+    //    websock = null
+    //    tryTime++
+    //    initWebSocket()
+    //    console.log(`第${tryTime}次重连`)
+    //  }, 3 * 1000)
+    //} else {
+    //  Message.error('重连失败！请稍后重试')
+    //}
   }
 }
+// 建立ws连接
+function websocketOpen (e) {
+  // console.log('ws连接成功')
+}
+
+// 初始化weosocket
+function initWebSocket () {
+  if (typeof (WebSocket) === 'undefined') {
+    Message.error('您的浏览器不支持WebSocket，无法获取数据')
+    return false
+  }
+
+  const token = 'JWT=' + getToken()
+  // ws请求完整地址
+  const requstWsUrl = wsUrl + '?' + token
+  websock = new WebSocket(requstWsUrl)
+
+  websock.onmessage = function (e) {
+    websocketonmessage(e)
+  }
+  websock.onopen = function () {
+    websocketOpen()
+  }
+  websock.onerror = function () {
+    Message.error('ws连接异常，请稍候重试')
+    errorCallback()
+  }
+  websock.onclose = function (e) {
+    websocketclose(e)
+  }
+}
+
+/**
+ * 发起websocket请求函数
+ * @param {string} url ws连接地址
+ * @param {Object} agentData 传给后台的参数
+ * @param {function} successCallback 接收到ws数据，对数据进行处理的回调函数
+ * @param {function} errCallback ws连接错误的回调函数
+ */
+export function sendWebsocket (url, agentData, successCallback, errCallback) {
+  wsUrl = url
+  initWebSocket()
+  messageCallback = successCallback
+  errorCallback = errCallback
+  websocketSend(agentData)
+}
+
+/**
+ * 关闭websocket函数
+ */
+export function closeWebsocket () {
+  if (websock) {
+    websock.close() // 关闭websocket
+    websock.onclose() // 关闭websocket
+  }
+}
+ ////////////////////
+ <template>
+   <div>
+     <button @click="requstWs">点击发起websocket请求</button>
+   </div>
+ </template>
+ <script>
+ import { sendWebsocket, closeWebsocket } from '@/utils/websocket.js'
+
+ export default {
+   beforeDestroy () {
+     // 页面销毁时关闭ws。因为有可能ws连接接收数据尚未完成，用户就跳转了页面
+     // 在需要主动关闭ws的地方都可以调用该方法
+     closeWebsocket()
+   },
+   methods: {
+     // ws连接成功，后台返回的ws数据，组件要拿数据渲染页面等操作
+     wsMessage (data) {
+       const dataJson = data
+       console.log(dataJson)
+       // 这里写拿到数据后的业务代码
+     },
+     // ws连接失败，组件要执行的代码
+     wsError () {
+       // 比如取消页面的loading
+     },
+     requstWs () {
+       // 防止用户多次连续点击发起请求，所以要先关闭上次的ws请求。
+       closeWebsocket()
+       // 跟后端协商，需要什么参数数据给后台
+       const obj = {
+         monitorUrl: 'xxxxxxxxxxxxx',
+         userName: 'xxxxxxxxxx'
+       }
+       // 发起ws请求
+       sendWebsocket('ws://test.ws.com', obj, this.wsMessage, this.wsError)
+     }
+   }
+ }
+ </script>
+
