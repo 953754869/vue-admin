@@ -1,138 +1,89 @@
-var websock = null;
+npm install file-saver --save
+npm install  xlsx -save
 
-var global_callback = null;
-var serverPort = "80"; // webSocket连接端口
-var wsuri = "ws://" + window.location.hostname + ":" + serverPort;
+npm install xlsx@0.16.0 --save
+///////////
+import fs from 'file-saver'
+import XLSX from 'xlsx'
 
-function createWebSocket(callback) {
 
-  if (websock == null || typeof websock !== WebSocket) {
-    initWebSocket(callback);
-  }
-}
-
-function initWebSocket(callback) {
-  global_callback = callback;
-  // 初始化websocket
-  websock = new WebSocket(wsuri);
-  websock.onmessage = function (e) {
-    websocketonmessage(e);
-  };
-  websock.onclose = function (e) {
-    websocketclose(e);
-  };
-  websock.onopen = function () {
-    websocketOpen();
-  };
-
-  // 连接发生错误的回调方法
-  websock.onerror = function () {
-    console.log("WebSocket连接发生错误");
-     //createWebSocket();啊，发现这样写会创建多个连接，加延时也不行
-  };
-}
-
-// 实际调用的方法
-function sendSock(agentData ) {
-
-  if (websock.readyState === websock.OPEN) {
-    // 若是ws开启状态
-    websocketsend(agentData);
-  } else if (websock.readyState === websock.CONNECTING) {
-    // 若是 正在开启状态，则等待1s后重新调用
-    setTimeout(function () {
-      sendSock(agentData);
-    }, 1000);
-  } else {
-    // 若未开启 ，则等待1s后重新调用
-    setTimeout(function () {
-      sendSock(agentData);
-    }, 1000);
-  }
-}
-
-function closeSock() {
-  websock.close();
-}
-
-// 数据接收
-function websocketonmessage(msg) {
-  // console.log("收到数据："+JSON.parse(e.data));
-  // console.log("收到数据："+msg);
-
-  // global_callback(JSON.parse(msg.data));
-
-  // 收到信息为Blob类型时
-  let result = null;
-  // debugger
-  if (msg.data instanceof Blob) {
-    const reader = new FileReader();
-    reader.readAsText(msg.data, "UTF-8");
-    reader.onload = (e) => {
-      result = JSON.parse(reader.result);
-      //console.log("websocket收到", result);
-      global_callback(result);
-    };
-  } else {
-    result = JSON.parse(msg.data);
-    //console.log("websocket收到", result);
-    global_callback(result);
-  }
-}
-
-// 数据发送
-function websocketsend(agentData) {
-  console.log("发送数据：" + agentData);
-  websock.send(agentData);
-}
-
-// 关闭
-function websocketclose(e) {
-  console.log("connection closed (" + e.code + ")");
-}
-
-function websocketOpen(e) {
-  console.log("连接打开");
-}
-
-export { sendSock, createWebSocket, closeSock };
-///////////////////////////////////////////
-@/utils/websocke/index.js
-
-import { sendSock, createWebSocket, closeSock } from "@/api/socket";
-created() {
-    this.init();
-    ......
-  },
-  methods: {
-    init() {
-      createWebSocket(this.global_callback);
-      ......
+export function xlsx(json, fields, filename = '.xlsx') { //导出xlsx
+  json.forEach(item => {
+    for (let i in item) {
+      if (fields.hasOwnProperty(i)) {
+        item[fields[i]] = item[i];
+      }
+      delete item[i]; //删除原先的对象属性
+    }
+  })
+  let sheetName = filename //excel的文件名称
+  let wb = XLSX.utils.book_new() //工作簿对象包含一SheetNames数组，以及一个表对象映射表名称到表对象。XLSX.utils.book_new实用函数创建一个新的工作簿对象。
+  let ws = XLSX.utils.json_to_sheet(json, {
+    header: Object.values(fields)
+  }) //将JS对象数组转换为工作表。
+  wb.SheetNames.push(sheetName)
+  wb.Sheets[sheetName] = ws
+  const defaultCellStyle = {
+    font: {
+      name: "Verdana",
+      sz: 13,
+      color: "FF00FF88"
     },
+    fill: {
+      fgColor: {
+        rgb: "FFFFAA00"
+      }
+    }
+  }; //设置表格的样式
+  let wopts = {
+    bookType: 'xlsx',
+    bookSST: false,
+    type: 'binary',
+    cellStyles: true,
+    defaultCellStyle: defaultCellStyle,
+    showGridLines: false
+  } //写入的样式
+  let wbout = XLSX.write(wb, wopts)
+  let blob = new Blob([s2ab(wbout)], {
+    type: 'application/octet-stream'
+  })
+  fs.saveAs(blob, filename + '.xlsx')
+}
 
-    // websocket的回调函数，msg表示收到的消息
-    global_callback(msg) {
-      console.log("websocket的回调函数收到服务器信息：" + JSON.stringify(msg));
-      // console.log("收到服务器信息：" + msg);
-    },
+const s2ab = s => {
+  var buf;
+  if (typeof ArrayBuffer !== 'undefined') {
+    buf = new ArrayBuffer(s.length)
+    var view = new Uint8Array(buf)
+    for (var i = 0; i != s.length; ++i) view[i] = s.charCodeAt(i) & 0xff
+    return buf
+  } else {
+    buf = new Array(s.length);
+    for (var i = 0; i != s.length; ++i) buf[i] = s.charCodeAt(i) & 0xFF;
+    return buf;
   }
+}
 
-  ////////////////////////////
-  import { sendSock } from "@/api/socket";
+///////////////
+import { xlsx } from "@/utils/getXlsx";
 
-   var sendData = {
-          operate:"singleChannelSwitch",
-          index:index+1,
-          opera:row.button_relay
-        };
-        sendSock(JSON.stringify(sendData));
-
-
-        //////////////////////
-        第一步：导入文件
-
-        import { closeSock} from "@/api/socket";
-
-        第二步：关闭连接
-
-        closeSock();
+///////////
+handleExcel() {
+//以下的fields ，arry ，this.tableList都是可以更换的，但要保持一致
+      let fields = {
+        title1: "姓名",
+        title2: "性别",
+        title3: "成绩",
+        title4: "家庭住址",
+      };
+      let arry = [];
+      this.tableList.forEach((item) => {
+        arry.push({
+          title1: item.name,
+          title2: item.gender,
+          title3: item.score,
+          title4: item.address,
+        });
+      });
+      xlsx(arry, fields, "人员名单");
+    },
