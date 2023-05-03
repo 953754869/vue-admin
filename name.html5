@@ -1,150 +1,110 @@
-import { Message } from 'element-ui'
-import { getToken } from '@/utils/authToken' // 与后端的协商，websocket请求需要带上token参数
-let websock = null
-let messageCallback = null
-let errorCallback = null
-let wsUrl = ''
-let tryTime = 0
+<template>
+	<el-button type="primary" size="mini" class="page_breadcrumb_btn" @click="getExportList">导出</el-button>
+</template>
+export default {
+    name:'userInfo',
+    data() {
+    	tableData: [{
+			user_id:'',
+            id:'',
+            username:'',
+            piname:'',
+            createtime:'',
+            firstLoginTime:'',
+            system:'',
+            lastLoginTime:''
+		}]
+    },
+	methods: {
+		getExportList() {
+	            const _self=this
+	            let jsonData = {
+	                trade:{
+	                    tHeader: ["用户标识","用户名称","创建人","创建时间","首次登录时间","来源系统","最近登录时间"],
+	                    filterVal: ["user_id","username","piname","createtime","firstLoginTime","system","lastLoginTime"],
+	                    list: _self.tableData
+	                }
+	            }
+	            _self.exportPathMethod(jsonData)// 调用exportPathMethod对数据进行处理导出
+	            _self.exportShow=false
+	        },
+	        exportPathMethod(data) {
+	            /*
+	            *注：csv文件：","逗号换列，\n换行，\t防止excel将长数字变科学计算法等样式
+	            */
+	            //要导出的json数据
+	            let mainLists = data.trade   //主表
+	            let _self = this
+	            //## 数据处理
+	            //一级表
+	            let mainTitle = mainLists.tHeader;//一级标题
+	            let mainTitleForKey = mainLists.filterVal;//一级过滤
+	            let mainList = mainLists.list;//一级数据
+	            let mainStr = [];
+	            mainStr.push(mainTitle.join("\t,")+"\n");   //标题添加上换列转成字符串并存进数组
+	            for(let i=0;i<mainList.length;i++){
+	                let temp = [];
+	                for(let j=0;j<mainTitleForKey.length;j++){
+	                    temp.push(mainList[i][mainTitleForKey[j]]); //根据过滤器拿出对应的值
+	                }
+	                mainStr.push(temp.join("\t,")+"\n");    //取出来的值加上逗号换列转字符串存数组
+	            }
+	            // console.log(JSON.stringify(mainStr.join("")));//打印文本
 
-// 接收ws后端返回的数据
-function websocketonmessage (e) {
-  messageCallback(JSON.parse(e.data))
+	            //两个表数组转成字符串合并
+	            let merged = mainStr.join("")
+	            //console.log(JSON.stringify(merged));//打印结果
+
+	            //## 导出操作
+	            // encodeURIComponent解决中文乱码
+	            const uri = 'data:text/csv;charset=utf-8,\ufeff' + encodeURIComponent(merged)
+	            // 通过创建a标签实现
+	            let link = document.createElement('a')
+	            link.href = uri
+	            // 对下载的文件命名
+	            link.download = `用户信息${_self.$moment(_self.$moment().valueOf()).format('YYYYMMDD')}.csv`
+	            document.body.appendChild(link)
+	            link.click()
+	        }
+	}
 }
 
-/**
- * 发起websocket连接
- * @param {Object} agentData 需要向后台传递的参数数据
- */
-function websocketSend (agentData) {
-  // 加延迟是为了尽量让ws连接状态变为OPEN
-  setTimeout(() => {
-    // 添加状态判断，当为OPEN时，发送消息
-    if (websock.readyState === websock.OPEN) { // websock.OPEN = 1
-      // 发给后端的数据需要字符串化
-      websock.send(JSON.stringify(agentData))
-    }
-    if (websock.readyState === websock.CLOSED) { // websock.CLOSED = 3
-      console.log('websock.readyState=3')
-      Message.error('ws连接异常，请稍候重试')
-      errorCallback()
-    }
-  }, 500)
+////////////////////////
+
+
+import XLSX from 'xlsx'
+
+outputXlsxFile ()  {
+   let _self = this
+   let tableList=[]
+   let tableDataList=[]
+   _self.tableList.forEach(item => {
+       tableList.push({
+           "用户标识":item.admin_id,
+           "用户名称":item.username,
+           "创建人":item.piname,
+           "创建时间":item.create_time,
+           "首次登录时间":item.firstLoginTime,
+           "来源系统":item.system,
+           "最近登录时间":item.login_time
+       })
+   })
+   _self.tableDataList.forEach(item => {
+       tableDataList.push({
+           "用户标识":item.admin_id,
+           "用户名称":item.username,
+           "创建人":item.piname,
+           "创建时间":item.create_time,
+           "首次登录时间":item.firstLoginTime,
+           "来源系统":item.system,
+           "最近登录时间":item.login_time
+       })
+   })
+   let data = _self.export_pagination === '1' ? tableList:tableDataList
+   let header = {header: ["用户标识","用户名称","创建人","创建时间","首次登录时间","来源系统","最近登录时间"] }
+   let ws = XLSX.utils.json_to_sheet(data, header)
+   let wb = XLSX.utils.book_new()
+   XLSX.utils.book_append_sheet(wb, ws, `用户信息${_self.$moment(_self.$moment().valueOf()).format('YYYYMMDD')}.csv`)
+   XLSX.writeFile(wb, `用户信息${_self.$moment(_self.$moment().valueOf()).format('YYYYMMDD')}.csv`)
 }
-
-// 关闭ws连接
-function websocketclose (e) {
-  // e.code === 1000  表示正常关闭。 无论为何目的而创建, 该链接都已成功完成任务。
-  // e.code !== 1000  表示非正常关闭。
-  if (e && e.code !== 1000) {
-    Message.error('ws连接异常，请稍候重试')
-    errorCallback()
-    // // 如果需要设置异常重连则可替换为下面的代码，自行进行测试
-    // if (tryTime < 10) {
-    //   setTimeout(function() {
-    //    websock = null
-    //    tryTime++
-    //    initWebSocket()
-    //    console.log(`第${tryTime}次重连`)
-    //  }, 3 * 1000)
-    //} else {
-    //  Message.error('重连失败！请稍后重试')
-    //}
-  }
-}
-// 建立ws连接
-function websocketOpen (e) {
-  // console.log('ws连接成功')
-}
-
-// 初始化weosocket
-function initWebSocket () {
-  if (typeof (WebSocket) === 'undefined') {
-    Message.error('您的浏览器不支持WebSocket，无法获取数据')
-    return false
-  }
-
-  const token = 'JWT=' + getToken()
-  // ws请求完整地址
-  const requstWsUrl = wsUrl + '?' + token
-  websock = new WebSocket(requstWsUrl)
-
-  websock.onmessage = function (e) {
-    websocketonmessage(e)
-  }
-  websock.onopen = function () {
-    websocketOpen()
-  }
-  websock.onerror = function () {
-    Message.error('ws连接异常，请稍候重试')
-    errorCallback()
-  }
-  websock.onclose = function (e) {
-    websocketclose(e)
-  }
-}
-
-/**
- * 发起websocket请求函数
- * @param {string} url ws连接地址
- * @param {Object} agentData 传给后台的参数
- * @param {function} successCallback 接收到ws数据，对数据进行处理的回调函数
- * @param {function} errCallback ws连接错误的回调函数
- */
-export function sendWebsocket (url, agentData, successCallback, errCallback) {
-  wsUrl = url
-  initWebSocket()
-  messageCallback = successCallback
-  errorCallback = errCallback
-  websocketSend(agentData)
-}
-
-/**
- * 关闭websocket函数
- */
-export function closeWebsocket () {
-  if (websock) {
-    websock.close() // 关闭websocket
-    websock.onclose() // 关闭websocket
-  }
-}
- ////////////////////
- <template>
-   <div>
-     <button @click="requstWs">点击发起websocket请求</button>
-   </div>
- </template>
- <script>
- import { sendWebsocket, closeWebsocket } from '@/utils/websocket.js'
-
- export default {
-   beforeDestroy () {
-     // 页面销毁时关闭ws。因为有可能ws连接接收数据尚未完成，用户就跳转了页面
-     // 在需要主动关闭ws的地方都可以调用该方法
-     closeWebsocket()
-   },
-   methods: {
-     // ws连接成功，后台返回的ws数据，组件要拿数据渲染页面等操作
-     wsMessage (data) {
-       const dataJson = data
-       console.log(dataJson)
-       // 这里写拿到数据后的业务代码
-     },
-     // ws连接失败，组件要执行的代码
-     wsError () {
-       // 比如取消页面的loading
-     },
-     requstWs () {
-       // 防止用户多次连续点击发起请求，所以要先关闭上次的ws请求。
-       closeWebsocket()
-       // 跟后端协商，需要什么参数数据给后台
-       const obj = {
-         monitorUrl: 'xxxxxxxxxxxxx',
-         userName: 'xxxxxxxxxx'
-       }
-       // 发起ws请求
-       sendWebsocket('ws://test.ws.com', obj, this.wsMessage, this.wsError)
-     }
-   }
- }
- </script>
 
