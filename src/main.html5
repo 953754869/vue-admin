@@ -1,43 +1,170 @@
-import Vue from 'vue'
+(async () => {
+  const URI = 'bolt://localhost:7687';
+  const USER = 'neo4j';
+  const PASSWORD = '12345678';
+  let driver;
 
-import 'normalize.css/normalize.css' // A modern alternative to CSS resets
+  try {
+    driver = neo4j.driver(URI, neo4j.auth.basic(USER, PASSWORD));
+    const serverInfo = await driver.getServerInfo();
+    console.log('Connection established');
+    console.log(serverInfo);
 
-import ElementUI from 'element-ui'
-import 'element-ui/lib/theme-chalk/index.css'
-import locale from 'element-ui/lib/locale/lang/en' // lang i18n
+    const session = await driver.session();
+    // !!! 这句CYPHER尽量保持这种path=(node_source)-[relationship]->(node_target)形式，不然后面代码会一直改来改去!!!
+    const result = await session.run(
+      'MATCH path=(i:Ingredient)-[r:HAS_BENEFIT]->(b)\nRETURN path'
+    );
 
-import '@/styles/index.scss' // global css
+    // 打印 Neo4j 返回的数据
+    console.log(result.records.map((record) => record.get('path')));
 
-import App from './App'
-import store from './store'
-import router from './router'
+    // 将 Neo4J 数据转换为 ECharts 所需的格式
+    function convertNeo4jDataToEchartsData(paths) {
+      const nodes = new Map();
+      const links = [];
+      const categories = new Set();
 
-import '@/icons' // icon
-import '@/permission' // permission control
+      paths.forEach((path) => {
+        path.segments.forEach(({ start, end, relationship }) => {
+          // 添加起始节点
+          addNode(nodes, categories, start);
 
-/**
- * If you don't want to use mock-server
- * you want to use MockJs for mock api
- * you can execute: mockXHR()
- *
- * Currently MockJs will be used in the production environment,
- * please remove it before going online ! ! !
- */
-if (process.env.NODE_ENV === 'production') {
-  const { mockXHR } = require('../mock')
-  mockXHR()
+          // 添加结束节点
+          addNode(nodes, categories, end);
+
+          // 添加关系
+          addRelationship(links, nodes, relationship);
+        });
+      });
+
+      return {
+        nodes: Array.from(nodes.values()),
+        links,
+        categories: Array.from(categories),
+      };
+    }
+
+    function addNode(nodes, categories, node) {
+      const category = node.labels[0];
+      categories.add(category);
+
+      const nodeName = `${node.properties.id}`;
+      nodes.set(node.identity.low, {
+        id: node.identity.low,
+        name: nodeName,
+        category,
+        ...node.properties,
+      });
+    }
+    
+	// 我这里为了后面连线颜色，互换了source和target的
+	// source原本应该是start，target是end
+    function addRelationship(links, nodes, relationship) {
+      links.push({
+        source: nodes.get(relationship.end.low).id,
+        target: nodes.get(relationship.start.low).id,
+        label: relationship.type,
+        properties: relationship.properties,
+      });
+    }
+
+    // 获取 ECharts 需要的数据并显示
+    const { nodes, links, categories } = convertNeo4jDataToEchartsData(result.records.map((record) => record.get('path')));
+    displayEchartsGraph(nodes, links, categories);
+
+    // 关闭连接
+    await session.close();
+    await driver.close();
+  } catch (err) {
+    console.log(`Connection error\n${err}\nCause: ${err.cause}`);
+  }
+})();
+
+function displayEchartsGraph(nodes, links, categories) {
+  const myChart = echarts.init(document.getElementById('main'));
+  
+  console.log("Nodes:", nodes);
+  console.log("Links:", links);
+  console.log("Categories:", categories);
+
+  const categoryColors = {
+    "category1": "#BFC4C4",
+    "category2": "#91cc75",
+    "category3": "#fac858"
+  };
+
+  const option = {
+    backgroundColor: '#000000',
+    tooltip: {
+      trigger: 'item',
+      formatter: (params) => {
+        if (params.dataType === 'node') {
+          return `${params.data.name}<br>${params.data.description}`;
+        } else {
+          return `${params.data.source} --[${params.data.label}]--> ${params.data.target}`;
+        }
+      }
+    },
+    legend: [
+      {
+        data: categories,
+        orient: 'vertical',
+        left: 'left',
+        top: 'center',
+        textStyle: { color: '#fff' }
+      }
+    ],
+    series: [
+      {
+        type: 'graph',
+        layout: 'force',
+        data: nodes,
+        links: links,
+        categories: Object.keys(categoryColors).map((name) => ({
+          name: name,
+          itemStyle: {
+            color: categoryColors[name],
+          },
+        })),
+        roam: true,
+        // label: {
+        //   show: true,
+        //   position: 'inside'
+        // },
+        lineStyle: {
+          color: 'source',
+          curveness: 0.3,
+          width: 7
+        },
+        nodeScaleRatio: 0.6,
+        force: {
+          repulsion: 108,
+          gravity: 0.1,
+          edgeLength: [0, 7]
+        },
+        visualMap: {
+          min: 0.2,
+          max: 2,
+          precision: 2,
+          calculable: true,
+          realtime: true,
+          orient: 'horizontal',
+          left: 'center',
+          top: 'top',
+          color: ['#800026', '#ffffcc']
+        },
+        scaleLimit: {
+          min: 0.1,
+          max: 0.26
+        },
+        animation: {
+          duration: 50000, // 设置动画持续时间为5秒
+          loop: true // 循环播放动画
+        },
+      }
+    ]
+  };
+
+  myChart.setOption(option);
 }
-
-// set ElementUI lang to EN
-Vue.use(ElementUI, { locale })
-// 如果想要中文版 element-ui，按如下方式声明
-// Vue.use(ElementUI)
-
-Vue.config.productionTip = false
-
-new Vue({
-  el: '#app',
-  router,
-  store,
-  render: h => h(App)
-})
