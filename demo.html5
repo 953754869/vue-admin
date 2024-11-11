@@ -1,66 +1,16 @@
-<!DOCTYPE html>
-<html lang="en">
- 
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Document</title>
-</head>
-<style>
- 
- 
-  .list {
-    height: 30px;
-    line-height: 30px;
-    width: 500px;
-    margin: 0 auto;
-    height: 200px;
-    overflow: hidden;
-    border: 1px solid #ccc;
-    padding: 10px;
-    transition: all 0.3s;
-  }
- 
-.list:hover{
-  overflow: auto;
-}
- 
-  
-::-webkit-scrollbar
-{
-  width : 10px;  /*高宽分别对应横竖滚动条的尺寸*/
-  height: 1px;
-}
-::-webkit-scrollbar-thumb {
-  /*滚动条里面小方块*/
-  border-radius: 10px;
-  box-shadow   : inset 0 0 5px rgba(0, 0, 0, 0.1);
-  background   : #666;
-  transition: background 1s;
-}
-::-webkit-scrollbar-track {
-  /*滚动条里面轨道*/
-  box-shadow   : inset 0 0 5px rgba(0, 0, 0, 0.1);
-  border-radius: 10px;
-  background   : #ededed;
-}
- 
-</style>
- 
-<body>
-  <div class="list">
-    <div class="list-item">item</div>
-    <div class="list-item">item</div>
-    <div class="list-item">item</div>
-    <div class="list-item">item</div>
-    <div class="list-item">item</div>
-    <div class="list-item">item</div>
-    <div class="list-item">item</div>
-    <div class="list-item">item</div>
-    <div class="list-item">item</div>
-    <div class="list-item">item</div>
-    <div class="list-item">item</div>
-  </div>
-</body>
- 
-</html>
+前端并没有一个很明确的定义，前端总的来说就是用户可以直接看到并与之交互的网站，或者是web应用，所以通常也被称为web客户端，说的更简单一些，就是你能看到的一切网站页面的内容的展示和页面上的交互功都是对应的，后端就是与数据库和服务器打交道，通过接口API向前端提供数据服务
+前端开发就是通过使用HTML CSS JavaScript来创建，用户可以看到并且可以与之交互的web页面
+前端开发就是通过使用HTML CSS JavaScript来创建，用户可以看到，并且可以与之交互的页面，HTML CSS js 3种开发语言，在网页开发中分别有着不同的功能。
+  就是现在我们打开bili bili的首页，点击右键选择检查，就会弹出开发者工具，在开发者工具中的elements那一栏的下面，我们看到的就是HTML代码HTML全称超文本标记语言
+HTML是用来描述网页的内容结构，它是由嵌套的标签组成，比如我们现在选中ID为the national header的div标签，那在网页上就会凸显该标签所对应的网页上的区域CSS全称叫做接连样式表，它是用来控制网站的外观，
+是用来控制网站的外观，比如背景，字体，颜色宽高等等，也是因为有了这门语言，不同的网站才会长得各式各样，比如我们现在修改B站首页的背景颜色，
+JavaScript是一门编程语言，俗称网站脚本，通过使用JavaScript编程可以实现一些复杂的功能逻辑，例如对用户交互的行为做出反馈，发起数据请求动态修改，网页内容，比如我在哔哩哔哩首页的广告位，点击右下角的窗口索引按钮，当我点击时，JavaScript就知道用户发生了点击，然后根据计算具体点击了第几个原点，然后轮不到对应的广告图片，
+随着前端不断的发展，前端开发人员的能力不断提升，全端开发现在的职能往往不止局限于外部页面的开发，像小程序手机APP前端开发也能独立完成，
+前端开发负责哪些工作，主要工作就是开发和维护网站，但同一个网站对一个高级前端和一个初级前端来说，都能开发出来，但实现后的效果以及用户体验可能会有很大的差距，所以在开发网站时，前端也需要注重如何使用更好的交互体验。第二点就是由于现在的网站需要适配不同屏幕尺寸的设备
+那前端开发就得保证自己开发的网站在不同的尺寸的设备上，页面的样式展示都正常，不错乱，这个被我们称为响应式网页设计第三个工作是保证网站的兼容性
+我们讲到浏览器的工作原理中说到不同的浏览器使用的内核不大一样，这样就导致同样的代码在不同的浏览器中，甚至是在同一浏览器不同的版本中表现的形式可能都不太一样，这主要原因是不同浏览器常在开发自家浏览器的时候在很多方面并没有达成一致的标准
+举个不恰当的例子，假设我想把某个页面设置为红色，那我在CSS样式表里面写到background color为red，我们一起非要认为red是绿色green还是红色，那没办法，就只能做出判断，如果杀意the band ground color为green，如果不晒一般，所以为了保证在不同浏览器里面网页表现都是一致的，往往会需要写很多适配的代码
+第四个工作就是保证网站的性能，这里的性能包括很多方面，比如如何让用户更快的看到你的应用内容，一个网站打开需要花费十几秒，那用户还愿意来你的网站吗？网站复杂，业务逻辑处理的时间结构，请求时长等等，都属于性能方面。第五个是保证网站的安全，主要保证代码的严谨性，
+防止恶意用户通过某些手段获取用户的信息，或者通过插入恶意的代码诱导用户做出某种行为，导致用户的损失
+一个专业的技术团队中，一般情况下会有如下几个角色UI设计师，前端开发，后端开发，产品经理，测试工程师，也就是qa那他们之间是如何协同工作的呢？大概的一个流程是产品经理规划处网站的整体功能，然后提供具需求文档和网站的原型
+然后产品经理会找设计师设计出网页的具体的样式，同时产品经理会拉着前端开发和后端开发开一个会过一下需要的细节，前端会和后端开发商量一些实现方案和定义接口API接着设计师将设计稿给前端，前端开始设计稿开发页面调用后端接口获取网页数据等，开发完成后提交qa测试，如果有bug的话就会记录下来，并通知相关人员修复等测试完成，没有bug后就由qa发布上线
