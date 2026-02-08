@@ -1,3 +1,9 @@
+
+# npm 方式（推荐）
+npm install path-browserify crypto-browserify stream-browserify buffer process --save
+
+# yarn 方式（如果用 yarn）
+yarn add path-browserify crypto-browserify stream-browserify buffer process
 ///////////////////////package.ason
 {
   "name": "vue-admin-template",
