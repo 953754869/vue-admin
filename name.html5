@@ -1,110 +1,12 @@
-<template>
-	<el-button type="primary" size="mini" class="page_breadcrumb_btn" @click="getExportList">导出</el-button>
-</template>
-export default {
-    name:'userInfo',
-    data() {
-    	tableData: [{
-			user_id:'',
-            id:'',
-            username:'',
-            piname:'',
-            createtime:'',
-            firstLoginTime:'',
-            system:'',
-            lastLoginTime:''
-		}]
-    },
-	methods: {
-		getExportList() {
-	            const _self=this
-	            let jsonData = {
-	                trade:{
-	                    tHeader: ["用户标识","用户名称","创建人","创建时间","首次登录时间","来源系统","最近登录时间"],
-	                    filterVal: ["user_id","username","piname","createtime","firstLoginTime","system","lastLoginTime"],
-	                    list: _self.tableData
-	                }
-	            }
-	            _self.exportPathMethod(jsonData)// 调用exportPathMethod对数据进行处理导出
-	            _self.exportShow=false
-	        },
-	        exportPathMethod(data) {
-	            /*
-	            *注：csv文件：","逗号换列，\n换行，\t防止excel将长数字变科学计算法等样式
-	            */
-	            //要导出的json数据
-	            let mainLists = data.trade   //主表
-	            let _self = this
-	            //## 数据处理
-	            //一级表
-	            let mainTitle = mainLists.tHeader;//一级标题
-	            let mainTitleForKey = mainLists.filterVal;//一级过滤
-	            let mainList = mainLists.list;//一级数据
-	            let mainStr = [];
-	            mainStr.push(mainTitle.join("\t,")+"\n");   //标题添加上换列转成字符串并存进数组
-	            for(let i=0;i<mainList.length;i++){
-	                let temp = [];
-	                for(let j=0;j<mainTitleForKey.length;j++){
-	                    temp.push(mainList[i][mainTitleForKey[j]]); //根据过滤器拿出对应的值
-	                }
-	                mainStr.push(temp.join("\t,")+"\n");    //取出来的值加上逗号换列转字符串存数组
-	            }
-	            // console.log(JSON.stringify(mainStr.join("")));//打印文本
+// Vite 中替代 Webpack require.context + requireAll 的完整写法
+// 1. 匹配 ./svg 目录下所有 .svg 文件（不递归子目录），eager: true 同步加载（和原逻辑一致）
+const svgModules = import.meta.glob('./svg/*.svg', { eager: true });
 
-	            //两个表数组转成字符串合并
-	            let merged = mainStr.join("")
-	            //console.log(JSON.stringify(merged));//打印结果
+// 2. 还原 requireAll 函数（保留 map 遍历逻辑，和原代码一致）
+const requireAll = (modules) => {
+  // 遍历文件路径数组，返回模块内容数组（对应原 map(requireContext)）
+  return Object.keys(modules).map((filePath) => modules[filePath]);
+};
 
-	            //## 导出操作
-	            // encodeURIComponent解决中文乱码
-	            const uri = 'data:text/csv;charset=utf-8,\ufeff' + encodeURIComponent(merged)
-	            // 通过创建a标签实现
-	            let link = document.createElement('a')
-	            link.href = uri
-	            // 对下载的文件命名
-	            link.download = `用户信息${_self.$moment(_self.$moment().valueOf()).format('YYYYMMDD')}.csv`
-	            document.body.appendChild(link)
-	            link.click()
-	        }
-	}
-}
-
-////////////////////////
-
-
-import XLSX from 'xlsx'
-
-outputXlsxFile ()  {
-   let _self = this
-   let tableList=[]
-   let tableDataList=[]
-   _self.tableList.forEach(item => {
-       tableList.push({
-           "用户标识":item.admin_id,
-           "用户名称":item.username,
-           "创建人":item.piname,
-           "创建时间":item.create_time,
-           "首次登录时间":item.firstLoginTime,
-           "来源系统":item.system,
-           "最近登录时间":item.login_time
-       })
-   })
-   _self.tableDataList.forEach(item => {
-       tableDataList.push({
-           "用户标识":item.admin_id,
-           "用户名称":item.username,
-           "创建人":item.piname,
-           "创建时间":item.create_time,
-           "首次登录时间":item.firstLoginTime,
-           "来源系统":item.system,
-           "最近登录时间":item.login_time
-       })
-   })
-   let data = _self.export_pagination === '1' ? tableList:tableDataList
-   let header = {header: ["用户标识","用户名称","创建人","创建时间","首次登录时间","来源系统","最近登录时间"] }
-   let ws = XLSX.utils.json_to_sheet(data, header)
-   let wb = XLSX.utils.book_new()
-   XLSX.utils.book_append_sheet(wb, ws, `用户信息${_self.$moment(_self.$moment().valueOf()).format('YYYYMMDD')}.csv`)
-   XLSX.writeFile(wb, `用户信息${_self.$moment(_self.$moment().valueOf()).format('YYYYMMDD')}.csv`)
-}
-
+// 3. 执行遍历（等价于原 requireAll(req)）
+const svgModuleList = requireAll(svgModules);
