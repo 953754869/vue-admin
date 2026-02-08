@@ -461,22 +461,20 @@ module.exports = {
 
 
 
-
 chainWebpack(config) {
-  // 修复 preload 插件：先注册插件，再调用 tap 配置
-  config.plugin('preload')
-    .use(require('webpack/lib/webpack/PreloadPlugin')) // 显式注册 preload 插件
-    .tap(() => [
-      {
-        rel: 'preload',
-        fileBlacklist: [/\.map$/, /hot-update\.js$/, /runtime\..*\.js$/],
-        include: 'initial'
-      }
-    ])
+  // 🔥 核心修复：Vue CLI 5 内置 preload 插件，直接 tap 即可（无需手动 use）
+  // 移除原有的 .use(PreloadPlugin) 逻辑，恢复简洁写法
+  config.plugin('preload').tap((options) => {
+    options[0] = {
+      rel: 'preload',
+      fileBlacklist: [/\.map$/, /hot-update\.js$/, /runtime\..*\.js$/],
+      include: 'initial'
+    }
+    return options
+  })
 
   config.plugins.delete('prefetch')
 
-  // 保留原有 SVG 处理逻辑（无需修改）
   config.module
     .rule('svg')
     .exclude.add(resolve('src/icons'))
