@@ -440,3 +440,95 @@ module.exports = {
     'array-bracket-spacing': [2, 'never']
   }
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+chainWebpack(config) {
+  // 修复 preload 插件：先注册插件，再调用 tap 配置
+  config.plugin('preload')
+    .use(require('webpack/lib/webpack/PreloadPlugin')) // 显式注册 preload 插件
+    .tap(() => [
+      {
+        rel: 'preload',
+        fileBlacklist: [/\.map$/, /hot-update\.js$/, /runtime\..*\.js$/],
+        include: 'initial'
+      }
+    ])
+
+  config.plugins.delete('prefetch')
+
+  // 保留原有 SVG 处理逻辑（无需修改）
+  config.module
+    .rule('svg')
+    .exclude.add(resolve('src/icons'))
+    .end()
+  config.module
+    .rule('icons')
+    .test(/\.svg$/)
+    .include.add(resolve('src/icons'))
+    .end()
+    .use('svg-sprite-loader')
+    .loader('svg-sprite-loader')
+    .options({
+      symbolId: 'icon-[name]'
+    })
+    .end()
+
+  // 保留原有生产环境代码分割逻辑（无需修改）
+  config
+    .when(process.env.NODE_ENV !== 'development',
+      config => {
+        config
+          .plugin('ScriptExtHtmlWebpackPlugin')
+          .after('html')
+          .use('script-ext-html-webpack-plugin', [{
+            inline: /runtime\..*\.js$/
+          }])
+          .end()
+        config
+          .optimization.splitChunks({
+            chunks: 'all',
+            cacheGroups: {
+              libs: {
+                name: 'chunk-libs',
+                test: /[\\/]node_modules[\\/]/,
+                priority: 10,
+                chunks: 'initial'
+              },
+              elementUI: {
+                name: 'chunk-elementUI',
+                priority: 20,
+                test: /[\\/]node_modules[\\/]_?element-ui(.*)/
+              },
+              commons: {
+                name: 'chunk-commons',
+                test: resolve('src/components'),
+                minChunks: 3,
+                priority: 5,
+                reuseExistingChunk: true
+              }
+            }
+          })
+        config.optimization.runtimeChunk('single')
+      }
+    )
+}
